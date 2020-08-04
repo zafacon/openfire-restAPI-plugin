@@ -8,7 +8,9 @@ import java.util.Iterator;
 
 import javax.ws.rs.core.Response;
 
+import org.jivesoftware.openfire.XMPPContextListener;
 import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.cluster.ClusterManager;
 import org.jivesoftware.openfire.container.PluginManager;
 import org.jivesoftware.openfire.group.ConcurrentGroupList;
@@ -17,13 +19,16 @@ import org.jivesoftware.openfire.muc.*;
 import org.jivesoftware.openfire.muc.cluster.RoomUpdatedEvent;
 import org.jivesoftware.openfire.muc.cluster.RoomRemovedEvent;
 import org.jivesoftware.openfire.muc.cluster.RoomAvailableEvent;
+import org.jivesoftware.openfire.muc.spi.LocalMUCRole;
 import org.jivesoftware.openfire.muc.spi.LocalMUCRoom;
+import org.jivesoftware.openfire.muc.spi.LocalMUCUser;
 import org.jivesoftware.openfire.plugin.rest.RESTServicePlugin;
 import org.jivesoftware.openfire.plugin.rest.entity.*;
 import org.jivesoftware.openfire.plugin.rest.exceptions.ExceptionType;
 import org.jivesoftware.openfire.plugin.rest.exceptions.ServiceException;
 import org.jivesoftware.openfire.plugin.rest.utils.MUCRoomUtils;
 import org.jivesoftware.openfire.plugin.rest.utils.UserUtils;
+import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.util.AlreadyExistsException;
 import org.jivesoftware.util.cache.CacheFactory;
 import org.xmpp.packet.JID;
@@ -83,6 +88,74 @@ public class MUCRoomController {
                 if (!chatRoom.getName().contains(roomSearch)) {
                     continue;
                 }
+            }
+
+            if (channelType.equals(MUCChannelType.ALL)) {
+                mucRoomEntities.add(convertToMUCRoomEntity(chatRoom, expand));
+            } else if (channelType.equals(MUCChannelType.PUBLIC) && chatRoom.isPublicRoom()) {
+                mucRoomEntities.add(convertToMUCRoomEntity(chatRoom, expand));
+            }
+        }
+
+        return new MUCRoomEntities(mucRoomEntities);
+    }
+
+    /**
+     * Gets the chat rooms of which the specified user is a member
+     *
+     * @param serviceName
+     *            the service name
+     * @param channelType
+     *            the channel type
+     * @param jid
+     *            the jid of the user to search
+     * @return the chat rooms where the user is a member
+     */
+    public MUCRoomEntities getMemberChatRooms(String serviceName, String channelType, String jid, boolean expand) {
+        log("Get the user chat rooms");
+        List<MUCRoom> rooms = XMPPServer.getInstance().getMultiUserChatManager().getMultiUserChatService(serviceName)
+            .getChatRooms();
+
+        List<MUCRoomEntity> mucRoomEntities = new ArrayList<MUCRoomEntity>();
+
+        for (MUCRoom chatRoom : rooms) {
+
+            if (!chatRoom.getMembers().contains(UserUtils.checkAndGetJID(jid))) {
+                continue;
+            }
+
+            if (channelType.equals(MUCChannelType.ALL)) {
+                mucRoomEntities.add(convertToMUCRoomEntity(chatRoom, expand));
+            } else if (channelType.equals(MUCChannelType.PUBLIC) && chatRoom.isPublicRoom()) {
+                mucRoomEntities.add(convertToMUCRoomEntity(chatRoom, expand));
+            }
+        }
+
+        return new MUCRoomEntities(mucRoomEntities);
+    }
+
+    /**
+     * Gets the chat rooms of which the specified user is an admin
+     *
+     * @param serviceName
+     *            the service name
+     * @param channelType
+     *            the channel type
+     * @param jid
+     *            the jid of the user to search
+     * @return the chat rooms where the user is a member
+     */
+    public MUCRoomEntities getAdminChatRooms(String serviceName, String channelType, String jid, boolean expand) {
+        log("Get the admin chat rooms");
+        List<MUCRoom> rooms = XMPPServer.getInstance().getMultiUserChatManager().getMultiUserChatService(serviceName)
+            .getChatRooms();
+
+        List<MUCRoomEntity> mucRoomEntities = new ArrayList<MUCRoomEntity>();
+
+        for (MUCRoom chatRoom : rooms) {
+
+            if (!chatRoom.getAdmins().contains(UserUtils.checkAndGetJID(jid))) {
+                continue;
             }
 
             if (channelType.equals(MUCChannelType.ALL)) {
@@ -429,7 +502,6 @@ public class MUCRoomController {
             throw new ServiceException("Could not invite user", jid, ExceptionType.NOT_ALLOWED, Response.Status.FORBIDDEN, e);
         }
     }
-
 
     /**
      * Convert to MUC room entity.

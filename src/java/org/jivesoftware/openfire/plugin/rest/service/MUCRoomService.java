@@ -30,6 +30,26 @@ public class MUCRoomService {
     }
 
     @GET
+    @Path("/members/{jid}")
+    @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+    public MUCRoomEntities getMUCMemberRooms(@PathParam("jid") String jid,
+            @DefaultValue("conference") @QueryParam("servicename") String serviceName,
+            @DefaultValue(MUCChannelType.PUBLIC) @QueryParam("type") String channelType,
+            @DefaultValue("false") @QueryParam("expandGroups") Boolean expand) {
+        return MUCRoomController.getInstance().getMemberChatRooms(serviceName,channelType, jid, expand);
+    }
+
+    @GET
+    @Path("/admins/{jid}")
+    @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+    public MUCRoomEntities getMUCAdminRooms(@PathParam("jid") String jid,
+            @DefaultValue("conference") @QueryParam("servicename") String serviceName,
+            @DefaultValue(MUCChannelType.PUBLIC) @QueryParam("type") String channelType,
+            @DefaultValue("false") @QueryParam("expandGroups") Boolean expand) {
+        return MUCRoomController.getInstance().getAdminChatRooms(serviceName,channelType, jid, expand);
+    }
+
+    @GET
     @Path("/{roomName}")
     @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
     public MUCRoomEntity getMUCRoomJSON2(@PathParam("roomName") String roomName,
@@ -37,7 +57,6 @@ public class MUCRoomService {
             @DefaultValue("false") @QueryParam("expandGroups") Boolean expand) throws ServiceException {
         return MUCRoomController.getInstance().getChatRoom(roomName, serviceName, expand);
     }
-
 
     @DELETE
     @Path("/{roomName}")

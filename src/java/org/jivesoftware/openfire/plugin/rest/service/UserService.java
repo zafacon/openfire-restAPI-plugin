@@ -15,6 +15,7 @@ import javax.ws.rs.core.Response;
 import org.jivesoftware.openfire.plugin.rest.controller.UserServiceController;
 import org.jivesoftware.openfire.plugin.rest.entity.UserEntities;
 import org.jivesoftware.openfire.plugin.rest.entity.UserEntity;
+import org.jivesoftware.openfire.plugin.rest.entity.VCardEntity;
 import org.jivesoftware.openfire.plugin.rest.exceptions.ServiceException;
 
 @Path("restapi/v1/users")
@@ -61,4 +62,5 @@ public class UserService {
         plugin.deleteUser(username);
         return Response.status(Response.Status.OK).build();
     }
+
 }
